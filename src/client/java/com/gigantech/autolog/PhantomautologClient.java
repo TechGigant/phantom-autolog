@@ -14,7 +14,7 @@ import net.minecraft.text.Text;
 
 public class PhantomautologClient implements ClientModInitializer {
 	// Global variable to store autoleave state
-	public static boolean autoleave = false;
+	public static boolean autoleave = true;
 
 	@Override
 	public void onInitializeClient() {
@@ -29,8 +29,6 @@ public class PhantomautologClient implements ClientModInitializer {
 		// Register client tick event to check for phantoms
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.world != null && client.player != null) {
-				checkForPhantomsAndForceAutoleave(client);
-				
 				if (autoleave) {
 					checkForPhantomsAndDisconnect(client);
 				}
@@ -51,25 +49,6 @@ public class PhantomautologClient implements ClientModInitializer {
 	private int getAutoleave(CommandContext<FabricClientCommandSource> context) {
 		context.getSource().sendFeedback(Text.literal("Autoleave is currently: " + autoleave));
 		return 1;
-	}
-
-	private void checkForPhantomsAndForceAutoleave(MinecraftClient client) {
-		ClientWorld world = client.world;
-		if (world == null || client.player == null) return;
-
-		// Get time since last sleep (in ticks)
-		int timeSinceLastSleep = client.player.getSleepTimer();
-		
-		// Check for phantom entities in the world
-		boolean phantomsFound = world.getEntitiesByClass(PhantomEntity.class, client.player.getBoundingBox().expand(50.0), entity -> true).size() > 0;
-		
-		// Force autoleave to true if phantoms are present AND sleep timer > 72000 ticks
-		if (phantomsFound && timeSinceLastSleep > 72000) {
-			if (!autoleave) {
-				autoleave = true;
-				Phantomautolog.LOGGER.info("Phantoms detected with sleep timer at {} ticks! Forcing autoleave to true.", timeSinceLastSleep);
-			}
-		}
 	}
 
 	private void checkForPhantomsAndDisconnect(MinecraftClient client) {
